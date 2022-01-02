@@ -4,6 +4,8 @@ import os
 import re
 import plotly.figure_factory as ff
 import numpy as np
+import scipy
+from skbio.diversity import beta_diversity
 
 
 if len(sys.argv) <5:
@@ -67,7 +69,8 @@ with open(pairwise_file) as PAIRWISE:
         sample1 = run_ID_OUTPUT[namesMap_dict[sample1_old]]
         sample2 = run_ID_OUTPUT[namesMap_dict[sample2_old]]
         min_seq = float(min(seq_to_kmers[sample1_old], seq_to_kmers[sample2_old]))
-        containment = int(shared_kmers) / min_seq
+        max_seq = float(max(seq_to_kmers[sample1_old], seq_to_kmers[sample2_old]))
+        containment = max(int(shared_kmers) / max_seq, int(shared_kmers) / min_seq)
         obj_distance[(sample1, sample2)] = containment
 
 unique_ids = sorted(set([x for y in obj_distance.keys() for x in y]))
@@ -80,4 +83,6 @@ for k, v in obj_distance.items():
 
 df = df.fillna(0)
 
-df.to_csv("distmat_" + os.path.basename(pairwise_file), sep= '\t')
+bc_dm = beta_diversity("braycurtis", df, unique_ids)
+braycurtis_df = bc_dm.to_data_frame()
+braycurtis_df.to_csv("distmat_" + os.path.basename(pairwise_file), sep= '\t')
